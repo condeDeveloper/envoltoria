@@ -1,0 +1,47 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ${{ matrix.so }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # O juiz e a DEFINICAO de envoltoria convexa, escrita como forca bruta: um
+      # par de pontos e uma aresta quando todos os outros ficam do mesmo lado
+      # dele. Comparar tres algoritmos entre si diz quando eles discordam e nao
+      # diz qual esta certo; tres implementacoes que concordam e erram juntas sao
+      # piores que uma que erra sozinha.
+      - name: testes
+        run: dotnet test testes/Envoltoria.Testes/Envoltoria.Testes.csproj -c Release --nologo -v q
+
+      - name: o juiz, os tres algoritmos contra a definicao
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- juiz
+
+      # O predicado com virgula so desmonta ACIMA de 2^53, e por isso rodar em
+      # tres sistemas importa: o determinante de precisao dupla e a ordem de
+      # avaliacao dos produtos podem mudar com o compilador e com a arquitetura.
+      # "Errou em 131.936 de 205.320 trios" so e um numero se for o mesmo numero
+      # nos tres.
+      - name: o predicado com virgula contra o exato
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- predicado
+
+      - name: o estrago, com a saida deixando de ser convexa
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- estrago
+
+      - name: o custo em chamadas do predicado
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- custo
